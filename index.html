@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кассир - кабинет организатора</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        kassir: '#FFC800',
+        'kassir-light': '#FFF5CC',
+        'kassir-hover': '#FFD43B',
+      },
+      fontFamily: { 'main': ['Golos Text', 'system-ui', 'sans-serif'] },
+      fontSize: {
+        'xxs': '10px',
+        'label': '11px',
+        'body-sm': '13px',
+        'card-h': '14px',
+        'page-h': '22px',
+        'kpi-num': '24px',
+        'kpi-big': '26px',
+      }
+    }
+  }
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: 'Golos Text', system-ui, sans-serif; }
+  .nav-link.active { background: #FFF5CC; color: #222; font-weight: 600; }
+  .nav-link.active i { opacity: .85; }
+  .data-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .3px; color: #999; font-weight: 600; }
+  .data-table tbody tr:hover { background: #fafafa; }
+  .side-scroll::-webkit-scrollbar { width: 0; }
+  .side-scroll { scrollbar-width: none; }
+  /* chart canvas fix */
+  canvas { max-height: 100% !important; }
+
+  .data-table code { font-size: inherit }
+  /* TODO: вынести стили в отдельный css когда будем собирать бандлером */
+  /* .promo-badge { background: #FFC800; animation: pulse 2s infinite } */
+
+  @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .live-dot { animation: livepulse 2s ease-in-out infinite }
+</style>
+</head>
+<body class="bg-gray-100 text-gray-900 text-sm">
+
+<header class="fixed top-0 left-0 right-0 h-14 bg-white border-b border-gray-200 flex items-center px-5 z-50">
+  <svg width="120" height="24" viewBox="0 0 120 24" xmlns="http://www.w3.org/2000/svg"><text x="0" y="18" font-family="Golos Text,sans-serif" font-size="18" font-weight="800" fill="#333">KASSIR</text><circle cx="78" cy="12" r="10" fill="#FFC800" stroke="#444" stroke-width="2"/><circle cx="74.5" cy="9" r="1.5" fill="#333"/><circle cx="81.5" cy="9" r="1.5" fill="#333"/><path d="M74 14.5Q78 18 82 14.5" stroke="#333" stroke-width="1.8" fill="none" stroke-linecap="round"/><text x="90" y="18" font-family="Golos Text,sans-serif" font-size="18" font-weight="800" fill="#333">RU</text></svg>
+  <div class="w-px h-6 bg-gray-200 mx-3"></div>
+  <span class="text-xs text-gray-400">Кабинет организатора</span>
+  <div class="ml-auto flex items-center gap-3">
+    <div class="text-body-sm bg-gray-50 px-3 py-1.5 rounded-md">Баланс: <strong>24 500 ₽</strong></div>
+    <button class="w-8 h-8 border border-gray-200 rounded-md flex items-center justify-center relative hover:bg-gray-50 text-gray-500">
+      <i class="bi bi-bell text-[15px]"></i>
+      <span class="absolute -top-1 -right-1 min-w-[14px] h-[14px] bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">3</span>
+    </button>
+    <div class="flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer hover:bg-gray-50">
+      <div class="w-8 h-8 rounded-full bg-kassir flex items-center justify-center font-bold text-body-sm">А</div>
+      <div><div class="font-semibold text-body-sm leading-tight">Артлайф</div><div class="text-label text-gray-400">Организатор</div></div>
+    </div>
+  </div>
+</header>
+
+<aside class="fixed top-14 left-0 bottom-0 w-[246px] bg-white border-r border-gray-200 side-scroll overflow-y-auto py-3 z-40">
+
+  <div class="px-2.5 mb-1">
+    <div class="text-xxs font-bold uppercase tracking-wider text-gray-400 px-3 pt-1 pb-0.5">Аналитика</div>
+    <a class="nav-link active flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="dashboard">
+      <i class="bi bi-grid text-base opacity-50 w-[18px] text-center"></i>Обзор
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="events">
+      <i class="bi bi-calendar3 text-base opacity-50 w-[18px] text-center"></i>Мои мероприятия
+      <span class="ml-auto bg-kassir text-label font-bold px-1.5 rounded-full leading-[18px]">12</span>
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="audience">
+      <i class="bi bi-people text-base opacity-50 w-[18px] text-center"></i>Аудитория
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="pricing">
+      <i class="bi bi-graph-up-arrow text-base opacity-50 w-[18px] text-center"></i>Ценообразование
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="finance">
+      <i class="bi bi-credit-card text-base opacity-50 w-[18px] text-center"></i>Финансы
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="docs">
+      <i class="bi bi-file-earmark-text text-base opacity-50 w-[18px] text-center"></i>Документы
+    </a>
+  </div>
+
+  <div class="px-2.5 mb-1">
+    <div class="text-xxs font-bold uppercase tracking-wider text-gray-400 px-3 pt-2.5 pb-0.5">Продвижение</div>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="campaigns">
+      <i class="bi bi-lightning text-base opacity-50 w-[18px] text-center"></i>Мои кампании
+      <span class="ml-auto bg-kassir text-label font-bold px-1.5 rounded-full leading-[18px]">3</span>
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="create-campaign">
+      <i class="bi bi-plus-circle text-base opacity-50 w-[18px] text-center"></i>Создать кампанию
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="ad-slots">
+      <i class="bi bi-display text-base opacity-50 w-[18px] text-center"></i>Рекламные места
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="mailings">
+      <i class="bi bi-envelope text-base opacity-50 w-[18px] text-center"></i>Рассылки
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="promo-codes">
+      <i class="bi bi-tag text-base opacity-50 w-[18px] text-center"></i>Промокоды
+    </a>
+  </div>
+
+  <div class="px-2.5">
+    <div class="text-xxs font-bold uppercase tracking-wider text-gray-400 px-3 pt-2.5 pb-0.5">Сервис</div>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="widgets">
+      <i class="bi bi-code-slash text-base opacity-50 w-[18px] text-center"></i>Виджеты
+    </a>
+    <a class="nav-link flex items-center gap-2 px-3 py-2 rounded-md text-body-sm text-gray-500 cursor-pointer hover:bg-gray-50" data-page="help">
+      <i class="bi bi-question-circle text-base opacity-50 w-[18px] text-center"></i>Помощь
+    </a>
+  </div>
+</aside>
+
+<main class="ml-[246px] mt-14 p-6">
+
+    <section class="page-section" id="page-dashboard">
+
+    <div class="flex justify-between items-center mb-5">
+      <div>
+        <h1 class="text-page-h font-extrabold tracking-tight">Обзор</h1>
+        <p class="text-body-sm text-gray-400 mt-0.5">Последние 30 дней</p>
+      </div>
+      <div class="flex gap-2">
+        <button class="inline-flex items-center gap-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50"><i class="bi bi-download text-label"></i> Экспорт</button>
+      </div>
+    </div>
+
+    <!-- финансы + документы -->
+    <div class="grid grid-cols-[320px_1fr] gap-3 mb-5">
+
+      <!-- документы -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 font-bold text-card-h">Отчетность и документы</div>
+        <div class="p-3 space-y-1">
+          <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group">
+            <i class="bi bi-file-earmark-check text-gray-300 group-hover:text-kassir" style="font-size:18px"></i>
+            <div class="flex-1 min-w-0">
+              <div class="text-body-sm font-semibold truncate">Акт сверки за март 2025</div>
+              <div class="text-label text-gray-400">Сформирован 01.04.2025</div>
+            </div>
+            <i class="bi bi-download text-gray-300 group-hover:text-gray-500" style="font-size:13px"></i>
+          </a>
+          <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group">
+            <i class="bi bi-file-earmark-text text-gray-300 group-hover:text-kassir" style="font-size:18px"></i>
+            <div class="flex-1 min-w-0">
+              <div class="text-body-sm font-semibold truncate">Договор №КР-2024/187</div>
+              <div class="text-label text-gray-400">Подписан 12.01.2024</div>
+            </div>
+            <i class="bi bi-download text-gray-300 group-hover:text-gray-500" style="font-size:13px"></i>
+          </a>
+          <a class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group">
+            <i class="bi bi-file-earmark-spreadsheet text-gray-300 group-hover:text-kassir" style="font-size:18px"></i>
+            <div class="flex-1 min-w-0">
+              <div class="text-body-sm font-semibold truncate">Отчет Q1 2025</div>
+              <div class="text-label text-gray-400">Выгрузка .xlsx</div>
+            </div>
+            <i class="bi bi-download text-gray-300 group-hover:text-gray-500" style="font-size:13px"></i>
+          </a>
+        </div>
+        <div class="px-4 py-2 border-t border-gray-100">
+          <a class="text-xs font-semibold text-gray-400 hover:text-gray-600 cursor-pointer" data-goto="docs">Все документы →</a>
+        </div>
+      </div>
+
+      <!-- карточки справа 2x2 -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-1 flex items-center gap-1">Состояние счета <i class="bi bi-info-circle text-gray-300" style="font-size:12px"></i></div>
+          <div class="text-kpi-num font-extrabold leading-none tracking-tight kpi-counter" data-target="3707330" data-suffix=" ₽">3 707 330 ₽</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-1 flex items-center gap-1">Продано на будущие мероприятия <i class="bi bi-info-circle text-gray-300" style="font-size:12px"></i></div>
+          <div class="flex items-baseline gap-2">
+            <div class="text-kpi-num font-extrabold leading-none tracking-tight kpi-counter" data-target="3744700" data-suffix=" ₽">3 744 700 ₽</div>
+            <span class="text-label text-gray-400"><i class="bi bi-lock" style="font-size:11px"></i> 30%</span>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1">Сумма к возврату <i class="bi bi-info-circle text-gray-300" style="font-size:12px"></i></span>
+            <a class="text-xs font-semibold text-gray-400 hover:text-gray-600 cursor-pointer">Все возвраты</a>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <div class="text-kpi-num font-extrabold leading-none tracking-tight kpi-counter" data-target="19300" data-suffix=" ₽">19 300 ₽</div>
+            <a class="text-xs font-semibold text-blue-500 hover:text-blue-700 cursor-pointer">Подробнее</a>
+          </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-1 flex items-center justify-between">
+            Продажи за сегодня <i class="bi bi-info-circle text-gray-300" style="font-size:12px"></i>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <div class="text-kpi-num font-extrabold leading-none tracking-tight kpi-counter" data-target="49500" data-suffix=" ₽">49 500 ₽</div>
+            <a class="text-xs font-semibold text-gray-400 hover:text-gray-600 cursor-pointer">Все продажи</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Сводка: выручка по событиям + заполняемость -->
+    <div class="grid grid-cols-[340px_1fr] gap-3 mb-5">
+
+      <!-- Выручка по мероприятиям (donut) -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Выручка по мероприятиям</div>
+        <div class="px-5 pt-4 pb-2 flex justify-center" style="height:190px">
+          <canvas id="revenueDonut"></canvas>
+        </div>
+        <div class="px-5 pb-4 space-y-1.5 text-xs">
+          <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm mr-1.5 align-middle" style="background:#FFC800"></span>Мастер и Маргарита</span><span class="font-bold">3.72M ₽ <span class="text-gray-400 font-normal">(44%)</span></span></div>
+          <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm mr-1.5 align-middle" style="background:#fbbf24"></span>Вишневый сад</span><span class="font-bold">2.68M ₽ <span class="text-gray-400 font-normal">(32%)</span></span></div>
+          <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm mr-1.5 align-middle" style="background:#60a5fa"></span>Щелкунчик</span><span class="font-bold">1.41M ₽ <span class="text-gray-400 font-normal">(17%)</span></span></div>
+          <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm mr-1.5 align-middle" style="background:#d4d4d4"></span>Остальные</span><span class="font-bold">0.56M ₽ <span class="text-gray-400 font-normal">(7%)</span></span></div>
+        </div>
+      </div>
+
+      <!-- Заполняемость по событиям -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Заполняемость по событиям</div>
+        <div class="p-4 grid grid-cols-2 gap-3">
+
+          <div class="border border-gray-100 rounded-lg p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-body-sm">Мастер и Маргарита</div>
+              <div class="text-xs text-gray-400">12 апр</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="relative w-14 h-14 shrink-0">
+                <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#9ca3af" stroke-width="3" stroke-dasharray="28 72" stroke-linecap="round"/></svg>
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold">28%</div>
+              </div>
+              <div class="text-xs"><div>Продано <strong>4 210</strong></div><div class="text-gray-400">из 15 000</div><div class="mt-1"><span class="inline-flex items-center gap-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700"><span class="w-1 h-1 rounded-full bg-green-600"></span>В темпе</span></div></div>
+            </div>
+          </div>
+
+          <div class="border border-gray-100 rounded-lg p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-body-sm">Щелкунчик</div>
+              <div class="text-xs text-gray-400">20 апр</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="relative w-14 h-14 shrink-0">
+                <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="74 26" stroke-linecap="round"/></svg>
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold">74%</div>
+              </div>
+              <div class="text-xs"><div>Продано <strong>890</strong></div><div class="text-gray-400">из 1 200</div><div class="mt-1"><span class="inline-flex items-center gap-1 text-label font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600"><span class="w-1 h-1 rounded-full bg-blue-500"></span>Выше темпа</span></div></div>
+            </div>
+          </div>
+
+          <div class="border border-gray-100 rounded-lg p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-body-sm">Вишневый сад</div>
+              <div class="text-xs text-gray-400">5 апр</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="relative w-14 h-14 shrink-0">
+                <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#FFC800" stroke-width="3" stroke-dasharray="55 45" stroke-linecap="round"/></svg>
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold">55%</div>
+              </div>
+              <div class="text-xs"><div>Продано <strong>3 400</strong></div><div class="text-gray-400">из 6 200</div><div class="mt-1"><span class="inline-flex items-center gap-1 text-label font-semibold px-1.5 py-0.5 rounded bg-red-50 text-red-600"><span class="w-1 h-1 rounded-full bg-red-500"></span>Ниже темпа</span></div></div>
+            </div>
+          </div>
+
+          <div class="border border-gray-100 rounded-lg p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-body-sm">Евгений Онегин</div>
+              <div class="text-xs text-gray-400">28 апр</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="relative w-14 h-14 shrink-0">
+                <svg viewBox="0 0 36 36" class="w-14 h-14 -rotate-90"><circle cx="18" cy="18" r="15.9" fill="none" stroke="#f0f0f0" stroke-width="3"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="#9ca3af" stroke-width="3" stroke-dasharray="18 82" stroke-linecap="round"/></svg>
+                <div class="absolute inset-0 flex items-center justify-center text-xs font-bold">18%</div>
+              </div>
+              <div class="text-xs"><div>Продано <strong>720</strong></div><div class="text-gray-400">из 4 000</div><div class="mt-1"><span class="inline-flex items-center gap-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700"><span class="w-1 h-1 rounded-full bg-green-600"></span>В темпе</span></div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART: продажи -->
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <span class="font-bold text-card-h">Динамика продаж</span>
+        <div class="flex gap-1.5">
+          <select class="text-xs border border-gray-200 rounded px-2 py-1 bg-white" id="filter-event">
+            <option value="all">Все мероприятия</option>
+            <option value="master">Мастер и Маргарита</option>
+            <option value="swan">Щелкунчик</option>
+            <option value="cherry">Вишневый сад</option>
+          </select>
+          <select class="text-xs border border-gray-200 rounded px-2 py-1 bg-white" id="filter-channel">
+            <option value="all">Все каналы</option>
+            <option value="org">Органика</option>
+            <option value="ads">Реклама</option>
+            <option value="email">Email</option>
+          </select>
+          <div class="flex" id="period-btns">
+            <button class="px-2.5 py-1 text-label font-semibold border border-gray-200 rounded-l bg-white hover:bg-gray-50" data-period="7d">7д</button>
+            <button class="px-2.5 py-1 text-label font-semibold border-y border-gray-200 bg-kassir" data-period="30d">30д</button>
+            <button class="px-2.5 py-1 text-label font-semibold border border-gray-200 rounded-r bg-white hover:bg-gray-50" data-period="90d">90д</button>
+          </div>
+        </div>
+      </div>
+      <div class="p-5" style="height:280px">
+        <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ТРЕБУЕТ ВНИМАНИЯ + ИСТОЧНИКИ -->
+    <div class="grid grid-cols-[1fr_360px] gap-3 mb-5">
+
+      <!-- Требует внимания -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h flex items-center gap-2">
+          <i class="bi bi-exclamation-triangle text-amber-500"></i> Требует внимания
+        </div>
+        <div class="divide-y divide-gray-100">
+          <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
+            <div class="w-2 h-2 rounded-full bg-red-400 shrink-0"></div>
+            <div class="flex-1">
+              <div class="text-body-sm font-semibold">Вишневый сад - продажи ниже темпа</div>
+              <div class="text-label text-gray-400">Продано 55% за 3 нед. до события. Обычно на этом этапе - 72%</div>
+            </div>
+            <button class="text-xs font-semibold text-kassir hover:underline" data-goto="create-campaign">Запустить промо →</button>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
+            <div class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></div>
+            <div class="flex-1">
+              <div class="text-body-sm font-semibold">Спектакль "Евгений Онегин" - высокий процент возвратов</div>
+              <div class="text-label text-gray-400">8.3% возвратов (норма до 3%). Стоит проверить</div>
+            </div>
+            <a class="text-xs font-semibold text-gray-400 hover:text-gray-700" data-goto="events">Подробнее →</a>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
+            <div class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></div>
+            <div class="flex-1">
+              <div class="text-body-sm font-semibold">Промокод SPRING25 заканчивается через 2 дня</div>
+              <div class="text-label text-gray-400">Использован 147 раз, выручка 892K ₽</div>
+            </div>
+            <a class="text-xs font-semibold text-gray-400 hover:text-gray-700" data-goto="promo-codes">Продлить →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Источники трафика -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Источники трафика</div>
+        <div class="p-5">
+          <div class="mb-4" style="height:160px"><canvas id="sourcesChart"></canvas></div>
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm bg-kassir mr-1.5 align-middle"></span>Поиск Кассир</span><span class="font-bold">43%</span></div>
+            <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm bg-green-500 mr-1.5 align-middle"></span>Реклама</span><span class="font-bold">23%</span></div>
+            <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1.5 align-middle"></span>Прямой</span><span class="font-bold">17%</span></div>
+            <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm bg-purple-500 mr-1.5 align-middle"></span>Email</span><span class="font-bold">12%</span></div>
+            <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-sm bg-gray-300 mr-1.5 align-middle"></span>Другое</span><span class="font-bold">6%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Мероприятия: мини-таблица -->
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <span class="font-bold text-card-h">Мероприятия</span>
+        <a class="text-xs font-semibold text-gray-400 hover:text-gray-700 cursor-pointer" data-goto="events">Все мероприятия →</a>
+      </div>
+      <table class="data-table w-full">
+        <thead><tr class="border-b border-gray-200"><th class="text-left px-5 py-2.5">Мероприятие</th><th class="text-left px-3 py-2.5">Дата</th><th class="text-left px-3 py-2.5">Продано</th><th class="text-left px-3 py-2.5">Заполн.</th><th class="text-left px-3 py-2.5">Выручка</th><th class="text-left px-3 py-2.5">Темп</th><th class="px-3"></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-md bg-gradient-to-br from-yellow-200 to-amber-500 shrink-0"></div><div><div class="font-semibold">Мастер и Маргарита</div><div class="text-label text-gray-400">МХТ им. Чехова, Москва</div></div></div></td>
+            <td class="px-3 text-body-sm">12 апр</td>
+            <td class="px-3"><span class="font-bold">4 210</span><span class="text-gray-400"> / 15 000</span></td>
+            <td class="px-3">
+              <div class="flex items-center gap-2"><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:28%"></div></div><span class="text-xs font-bold">28%</span></div>
+            </td>
+            <td class="px-3 font-bold">12.6M ₽</td>
+            <td class="px-3"><span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-50 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-600"></span>В темпе</span></td>
+            <td class="px-3"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50" data-goto="events">Аналитика</button></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-md bg-gradient-to-br from-blue-100 to-blue-600 shrink-0"></div><div><div class="font-semibold">Щелкунчик</div><div class="text-label text-gray-400">Большой театр</div></div></div></td>
+            <td class="px-3 text-body-sm">20 апр</td>
+            <td class="px-3"><span class="font-bold">890</span><span class="text-gray-400"> / 1 200</span></td>
+            <td class="px-3"><div class="flex items-center gap-2"><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-green-500 rounded-full" style="width:74%"></div></div><span class="text-xs font-bold">74%</span></div></td>
+            <td class="px-3 font-bold">5.3M ₽</td>
+            <td class="px-3"><span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Выше темпа</span></td>
+            <td class="px-3"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50" data-goto="events">Аналитика</button></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><div class="w-9 h-9 rounded-md bg-gradient-to-br from-green-100 to-green-600 shrink-0"></div><div><div class="font-semibold">Вишневый сад</div><div class="text-label text-gray-400">Театр Вахтангова</div></div></div></td>
+            <td class="px-3 text-body-sm">5 апр</td>
+            <td class="px-3"><span class="font-bold">3 400</span><span class="text-gray-400"> / 6 200</span></td>
+            <td class="px-3"><div class="flex items-center gap-2"><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:55%"></div></div><span class="text-xs font-bold">55%</span></div></td>
+            <td class="px-3 font-bold">8.5M ₽</td>
+            <td class="px-3"><span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-red-50 text-red-600"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>Ниже темпа</span></td>
+            <td class="px-3"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50" data-goto="events">Аналитика</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Ближайшие события + Последние заказы -->
+    <div class="grid grid-cols-[1fr_400px] gap-3 mt-5">
+
+      <!-- Ближайшие события -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Ближайшие события</div>
+        <div class="divide-y divide-gray-100">
+          <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50">
+            <div class="text-center shrink-0 w-[52px]">
+              <div class="text-[20px] font-extrabold leading-none text-red-500">3</div>
+              <div class="text-xxs text-gray-400 mt-0.5">дня</div>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-body-sm">Вишневый сад</div>
+              <div class="text-label text-gray-400">5 апр, Театр Вахтангова</div>
+            </div>
+            <div class="text-right">
+              <div class="text-body-sm font-bold">3 400 / 6 200</div>
+              <div class="flex items-center gap-1.5 justify-end mt-1"><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:55%"></div></div><span class="text-label font-bold">55%</span></div>
+            </div>
+            <button class="text-xs font-semibold text-kassir hover:underline shrink-0" data-goto="create-campaign">Продвинуть</button>
+          </div>
+          <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50">
+            <div class="text-center shrink-0 w-[52px]">
+              <div class="text-[20px] font-extrabold leading-none">12</div>
+              <div class="text-xxs text-gray-400 mt-0.5">дней</div>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-body-sm">Мастер и Маргарита</div>
+              <div class="text-label text-gray-400">12 апр, МХТ им. Чехова</div>
+            </div>
+            <div class="text-right">
+              <div class="text-body-sm font-bold">4 210 / 15 000</div>
+              <div class="flex items-center gap-1.5 justify-end mt-1"><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:28%"></div></div><span class="text-label font-bold">28%</span></div>
+            </div>
+            <button class="text-xs font-semibold text-gray-400 hover:text-gray-700 shrink-0" data-goto="events">Подробнее</button>
+          </div>
+          <div class="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50">
+            <div class="text-center shrink-0 w-[52px]">
+              <div class="text-[20px] font-extrabold leading-none">20</div>
+              <div class="text-xxs text-gray-400 mt-0.5">дней</div>
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-body-sm">Щелкунчик</div>
+              <div class="text-label text-gray-400">20 апр, Большой театр</div>
+            </div>
+            <div class="text-right">
+              <div class="text-body-sm font-bold">890 / 1 200</div>
+              <div class="flex items-center gap-1.5 justify-end mt-1"><div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-green-500 rounded-full" style="width:74%"></div></div><span class="text-label font-bold text-green-600">74%</span></div>
+            </div>
+            <button class="text-xs font-semibold text-gray-400 hover:text-gray-700 shrink-0" data-goto="events">Подробнее</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Последние заказы (лента) -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+          <span class="font-bold text-card-h">Последние заказы</span>
+          <span class="inline-flex items-center gap-1.5 text-label text-green-600 font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-green-500 live-dot"></span>Live</span>
+        </div>
+        <div class="divide-y divide-gray-50 max-h-[260px] overflow-y-auto">
+          <div class="flex items-center gap-3 px-5 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs shrink-0"><i class="bi bi-check-lg"></i></div>
+            <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Мастер и Маргарита</div><div class="text-label text-gray-400">Партер, 2 билета</div></div>
+            <div class="text-right shrink-0"><div class="text-xs font-bold">5 900 ₽</div><div class="text-xxs text-gray-400">2 мин назад</div></div>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs shrink-0"><i class="bi bi-check-lg"></i></div>
+            <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Щелкунчик</div><div class="text-label text-gray-400">Амфитеатр, 1 билет</div></div>
+            <div class="text-right shrink-0"><div class="text-xs font-bold">8 500 ₽</div><div class="text-xxs text-gray-400">7 мин назад</div></div>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs shrink-0"><i class="bi bi-check-lg"></i></div>
+            <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Вишневый сад</div><div class="text-label text-gray-400">Промокод SPRING25, 3 билета</div></div>
+            <div class="text-right shrink-0"><div class="text-xs font-bold">6 675 ₽</div><div class="text-xxs text-gray-400">12 мин назад</div></div>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-500 text-xs shrink-0"><i class="bi bi-arrow-return-left"></i></div>
+            <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate text-red-600">Возврат: Спектакль "Евгений Онегин"</div><div class="text-label text-gray-400">Партер, 1 билет</div></div>
+            <div class="text-right shrink-0"><div class="text-xs font-bold text-red-600">-3 200 ₽</div><div class="text-xxs text-gray-400">18 мин назад</div></div>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs shrink-0"><i class="bi bi-check-lg"></i></div>
+            <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Мастер и Маргарита</div><div class="text-label text-gray-400">VIP, 2 билета</div></div>
+            <div class="text-right shrink-0"><div class="text-xs font-bold">14 000 ₽</div><div class="text-xxs text-gray-400">24 мин назад</div></div>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center text-green-600 text-xs shrink-0"><i class="bi bi-check-lg"></i></div>
+            <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate">Щелкунчик</div><div class="text-label text-gray-400">Партер, 2 билета</div></div>
+            <div class="text-right shrink-0"><div class="text-xs font-bold">12 000 ₽</div><div class="text-xxs text-gray-400">31 мин назад</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- МЕРОПРИЯТИЯ -->
+  <section class="page-section hidden" id="page-events">
+
+    <!-- список мероприятий (общий даш) -->
+    <div id="events-list" class="hidden">
+      <div class="flex justify-between items-center mb-5">
+        <h1 class="text-page-h font-extrabold tracking-tight">Мои мероприятия</h1>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-kassir hover:shadow-sm transition-all event-card" data-event="master">
+          <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-amber-50 to-amber-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-amber-900 bg-white/70 rounded px-1.5 py-0.5 inline-block">Драма</div></div></div>
+          <div class="font-bold text-body-sm">Мастер и Маргарита</div>
+          <div class="text-label text-gray-400 mt-0.5">12 апр, МХТ им. Чехова</div>
+          <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:28%"></div></div><span class="text-label font-bold">28%</span></div>
+          <div class="text-label text-gray-400 mt-1">4 210 / 15 000</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-kassir hover:shadow-sm transition-all event-card" data-event="cherry">
+          <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-green-50 to-green-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-green-900 bg-white/70 rounded px-1.5 py-0.5 inline-block">Драма</div></div></div>
+          <div class="font-bold text-body-sm">Вишневый сад</div>
+          <div class="text-label text-gray-400 mt-0.5">5 апр, Театр Вахтангова</div>
+          <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:55%"></div></div><span class="text-label font-bold">55%</span></div>
+          <div class="text-label text-gray-400 mt-1">3 400 / 6 200</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-kassir hover:shadow-sm transition-all event-card" data-event="swan">
+          <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-blue-50 to-blue-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-blue-900 bg-white/70 rounded px-1.5 py-0.5 inline-block">Балет</div></div></div>
+          <div class="font-bold text-body-sm">Щелкунчик</div>
+          <div class="text-label text-gray-400 mt-0.5">20 апр, Большой театр</div>
+          <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-green-500 rounded-full" style="width:74%"></div></div><span class="text-label font-bold">74%</span></div>
+          <div class="text-label text-gray-400 mt-1">890 / 1 200</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-kassir hover:shadow-sm transition-all event-card" data-event="onegin">
+          <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-purple-50 to-purple-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-purple-900 bg-white/70 rounded px-1.5 py-0.5 inline-block">Опера</div></div></div>
+          <div class="font-bold text-body-sm">Евгений Онегин</div>
+          <div class="text-label text-gray-400 mt-0.5">28 апр, Большой театр</div>
+          <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:18%"></div></div><span class="text-label font-bold">18%</span></div>
+          <div class="text-label text-gray-400 mt-1">720 / 4 000</div>
+        </div>
+      </div>
+
+      <!-- архив -->
+      <div class="mt-8">
+        <h2 class="text-card-h font-bold text-gray-400 mb-3">Архив</h2>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all event-card opacity-60 hover:opacity-90" data-event="hamlet">
+            <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-gray-500 bg-white/70 rounded px-1.5 py-0.5 inline-block">Драма</div></div></div>
+            <div class="font-bold text-body-sm text-gray-500">Гамлет</div>
+            <div class="text-label text-gray-400 mt-0.5">15 мар, МХТ им. Чехова</div>
+            <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:92%"></div></div><span class="text-label font-bold text-gray-400">92%</span></div>
+            <div class="text-label text-gray-400 mt-1">1 104 / 1 200 • завершено</div>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all event-card opacity-60 hover:opacity-90" data-event="seagull">
+            <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-gray-500 bg-white/70 rounded px-1.5 py-0.5 inline-block">Драма</div></div></div>
+            <div class="font-bold text-body-sm text-gray-500">Чайка</div>
+            <div class="text-label text-gray-400 mt-0.5">2 мар, Театр Вахтангова</div>
+            <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:78%"></div></div><span class="text-label font-bold text-gray-400">78%</span></div>
+            <div class="text-label text-gray-400 mt-1">624 / 800 • завершено</div>
+          </div>
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all event-card opacity-60 hover:opacity-90" data-event="lake">
+            <div class="w-full h-28 rounded-lg mb-3 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex items-end p-3"><div><div class="text-[11px] font-bold text-gray-500 bg-white/70 rounded px-1.5 py-0.5 inline-block">Балет</div></div></div>
+            <div class="font-bold text-body-sm text-gray-500">Лебединое озеро</div>
+            <div class="text-label text-gray-400 mt-0.5">18 фев, Большой театр</div>
+            <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:100%"></div></div><span class="text-label font-bold text-gray-400">100%</span></div>
+            <div class="text-label text-gray-400 mt-1">1 740 / 1 740 • аншлаг</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="event-detail">
+    <div class="flex justify-between items-center mb-5">
+      <div><h1 class="text-page-h font-extrabold tracking-tight" id="event-title">Мастер и Маргарита</h1><span id="event-badge" class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-500 ml-2" style="display:none"><i class="bi bi-archive"></i> Завершено</span><p class="text-body-sm text-gray-400" id="event-subtitle">12 апреля, МХТ им. Чехова / Продано 4 210 из 15 000</p></div>
+      <div class="flex gap-2">
+        <button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50" id="btn-back-to-list"><i class="bi bi-arrow-left text-label"></i> Все мероприятия</button>
+        <button class="px-4 py-2 bg-kassir rounded-lg text-body-sm font-semibold" data-goto="create-campaign">Продвинуть</button>
+      </div>
+    </div>
+
+    <!-- mini KPIs -->
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Продано</div>
+        <div class="text-page-h font-extrabold leading-none">4 210 <span class="text-card-h text-gray-400 font-normal">/ 15 000</span></div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Выручка</div>
+        <div class="text-page-h font-extrabold leading-none">12.6M ₽</div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Средний чек</div>
+        <div class="text-page-h font-extrabold leading-none">2 981 ₽</div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Возвраты</div>
+        <div class="text-page-h font-extrabold leading-none">1.2%</div>
+        <span class="inline-block mt-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700">норма</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-[1fr_380px] gap-3 mb-5">
+      <!-- кривая продаж -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+          <span class="font-bold text-card-h">Кривая продаж</span>
+          <span class="text-xs text-gray-400">с маркерами активностей</span>
+        </div>
+        <div class="p-5" style="height:260px"><canvas id="eventSalesChart"></canvas></div>
+        <div class="flex gap-4 px-5 py-2 border-t border-gray-100 text-xs text-gray-400">
+          <span><span class="inline-block w-2 h-2 rounded-sm bg-kassir mr-1 align-middle"></span>Продажи/день</span>
+          <span><span class="inline-block w-2 h-2 rounded-sm bg-blue-400 mr-1 align-middle"></span>Ожидаемый темп</span>
+          <span>▼ - запуск рекламы &nbsp; ● - рассылка</span>
+        </div>
+      </div>
+
+      <!-- воронка -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Воронка конверсии</div>
+        <div class="p-5 space-y-3" id="funnel-body">
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>Просмотр карточки</span><span class="font-bold">48 230</span></div>
+            <div class="w-full h-7 bg-kassir rounded"></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>Добавление в корзину</span><span class="font-bold">6 740 <span class="text-gray-400 font-normal">(14%)</span></span></div>
+            <div class="h-7 bg-amber-400 rounded" style="width:56%"></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>Оплата</span><span class="font-bold">4 210 <span class="text-gray-400 font-normal">(8.7%)</span></span></div>
+            <div class="h-7 bg-green-500 rounded" style="width:37%"></div>
+          </div>
+          <div class="pt-2 border-t border-gray-100 text-xs text-gray-500">
+            37.5% добавивших в корзину не завершают оплату. Возможно, стоит добавить напоминание о брошенной корзине.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Нижний ряд: билеты + распоясовка + география + источники -->
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <!-- типы билетов -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">По типам билетов</div>
+        <div class="p-4 space-y-2.5" id="tickets-body">
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>Партер</span><span><strong>2 100</strong> / 3 000 (70%)</span></div>
+            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:70%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>Амфитеатр</span><span><strong>1 400</strong> / 5 000 (28%)</span></div>
+            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:28%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>Балкон</span><span><strong>510</strong> / 5 000 (10%)</span></div>
+            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-red-400 rounded-full" style="width:10%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span>VIP-ложа</span><span><strong>200</strong> / 2 000 (10%)</span></div>
+            <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-red-400 rounded-full" style="width:10%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- распоясовка по ценам -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">По типам билетов (распоясовка)</div>
+        <div class="p-4 space-y-2" id="prices-body">
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-xs text-right shrink-0">до 1 500 ₽</span>
+            <div class="flex-1 h-5 bg-gray-100 rounded overflow-hidden"><div class="h-full bg-gray-400 rounded" style="width:12%"></div></div>
+            <span class="w-20 text-xs"><strong>504</strong> <span class="text-gray-400">(12%)</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-xs text-right shrink-0">1 500-3 000 ₽</span>
+            <div class="flex-1 h-5 bg-gray-100 rounded overflow-hidden"><div class="h-full bg-kassir rounded" style="width:38%"></div></div>
+            <span class="w-20 text-xs"><strong>1 599</strong> <span class="text-gray-400">(38%)</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-xs text-right shrink-0">3 000-5 000 ₽</span>
+            <div class="flex-1 h-5 bg-gray-100 rounded overflow-hidden"><div class="h-full bg-amber-400 rounded" style="width:28%"></div></div>
+            <span class="w-20 text-xs"><strong>1 177</strong> <span class="text-gray-400">(28%)</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-xs text-right shrink-0">5 000-8 000 ₽</span>
+            <div class="flex-1 h-5 bg-gray-100 rounded overflow-hidden"><div class="h-full bg-orange-400 rounded" style="width:15%"></div></div>
+            <span class="w-20 text-xs"><strong>631</strong> <span class="text-gray-400">(15%)</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-24 text-xs text-right shrink-0">от 8 000 ₽</span>
+            <div class="flex-1 h-5 bg-gray-100 rounded overflow-hidden"><div class="h-full bg-purple-400 rounded" style="width:7%"></div></div>
+            <span class="w-20 text-xs"><strong>299</strong> <span class="text-gray-400">(7%)</span></span>
+          </div>
+          <div class="pt-2 border-t border-gray-100 text-label text-gray-400">Ср. чек: 2 981 ₽. Основной спрос в диапазоне 1 500-5 000 ₽ (66% продаж).</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <!-- география -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">География покупателей</div>
+        <div class="p-4">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Москва</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:61%"></div></div><span class="w-8 text-right text-xs font-bold">61%</span></div>
+            <div class="flex items-center gap-2"><span class="w-[90px] text-xs">МО</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:14%"></div></div><span class="w-8 text-right text-xs font-bold">14%</span></div>
+            <div class="flex items-center gap-2"><span class="w-[90px] text-xs">СПб</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:8%"></div></div><span class="w-8 text-right text-xs font-bold">8%</span></div>
+            <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Казань</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:4%"></div></div><span class="w-8 text-right text-xs font-bold">4%</span></div>
+            <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Другие</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-300 rounded-full" style="width:13%"></div></div><span class="w-8 text-right text-xs font-bold">13%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- источники этого мероприятия -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Источники трафика</div>
+        <div class="p-4 space-y-2">
+          <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Поиск</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-kassir rounded-full" style="width:38%"></div></div><span class="w-8 text-right text-xs font-bold">38%</span></div>
+          <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Реклама</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-green-500 rounded-full" style="width:27%"></div></div><span class="w-8 text-right text-xs font-bold">27%</span></div>
+          <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Прямой</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500 rounded-full" style="width:19%"></div></div><span class="w-8 text-right text-xs font-bold">19%</span></div>
+          <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Email</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-purple-500 rounded-full" style="width:11%"></div></div><span class="w-8 text-right text-xs font-bold">11%</span></div>
+          <div class="flex items-center gap-2"><span class="w-[90px] text-xs">Виджет</span><div class="flex-1 h-[5px] bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-300 rounded-full" style="width:5%"></div></div><span class="w-8 text-right text-xs font-bold">5%</span></div>
+        </div>
+        <div class="px-4 py-3 border-t border-gray-100 text-label text-gray-400">
+          Бенчмарк: у спектаклей в Москве доля рекламы обычно 15-20%. У вас 27% - реклама работает хорошо.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- АУДИТОРИЯ (CRM) -->
+  <section class="page-section hidden" id="page-audience">
+    <div class="flex justify-between items-center mb-5">
+      <div><h1 class="text-page-h font-extrabold">Аудитория</h1><p class="text-body-sm text-gray-400">14 318 покупателей в базе</p></div>
+      <button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50"><i class="bi bi-download text-label"></i> Экспорт</button>
+    </div>
+
+    <!-- ключевые метрики -->
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Средний чек</div>
+        <div class="text-page-h font-extrabold leading-none">2 981 ₽</div>
+        <span class="inline-block mt-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700">▲ 4% за месяц</span>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Повторные покупки</div>
+        <div class="text-page-h font-extrabold leading-none">34%</div>
+        <div class="text-label text-gray-400 mt-1">покупали 2+ раза</div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">Билетов на заказ</div>
+        <div class="text-page-h font-extrabold leading-none">2.3</div>
+        <div class="text-label text-gray-400 mt-1">в среднем</div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <div class="text-xs text-gray-400 mb-1">LTV покупателя</div>
+        <div class="text-page-h font-extrabold leading-none">6 854 ₽</div>
+        <div class="text-label text-gray-400 mt-1">за все время</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Демография</div>
+        <div class="p-5" style="height:200px"><canvas id="demoChart"></canvas></div>
+      </div>
+
+      <!-- частота посещений -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Частота посещений</div>
+        <div class="p-5" style="height:200px"><canvas id="freqChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- предпочтения по жанрам -->
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Предпочтения по жанрам</div>
+      <div class="p-5 grid grid-cols-6 gap-3">
+        <div class="text-center p-3 rounded-lg bg-kassir-light"><div class="text-[18px] font-extrabold">38%</div><div class="text-label text-gray-500 mt-1">Драма</div></div>
+        <div class="text-center p-3 rounded-lg bg-gray-50"><div class="text-[18px] font-extrabold">22%</div><div class="text-label text-gray-500 mt-1">Балет</div></div>
+        <div class="text-center p-3 rounded-lg bg-gray-50"><div class="text-[18px] font-extrabold">17%</div><div class="text-label text-gray-500 mt-1">Мюзикл</div></div>
+        <div class="text-center p-3 rounded-lg bg-gray-50"><div class="text-[18px] font-extrabold">12%</div><div class="text-label text-gray-500 mt-1">Опера</div></div>
+        <div class="text-center p-3 rounded-lg bg-gray-50"><div class="text-[18px] font-extrabold">7%</div><div class="text-label text-gray-500 mt-1">Комедия</div></div>
+        <div class="text-center p-3 rounded-lg bg-gray-50"><div class="text-[18px] font-extrabold">4%</div><div class="text-label text-gray-500 mt-1">Детский</div></div>
+      </div>
+    </div>
+    </div><!-- /event-detail -->
+  </section>
+
+  <!-- ОСТАЛЬНЫЕ СТРАНИЦЫ -->
+
+  <section class="page-section hidden" id="page-pricing">
+    <div class="flex justify-between items-center mb-5"><div><h1 class="text-page-h font-extrabold">Ценообразование</h1><p class="text-body-sm text-gray-400">Управление ценами по мероприятиям</p></div></div>
+
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Ср. цена билета</div><div class="text-page-h font-extrabold leading-none">2 950 ₽</div><span class="inline-block mt-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700">▲ 8% vs прошлый месяц</span></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Автоповышений сработало</div><div class="text-page-h font-extrabold leading-none">7</div><div class="text-label text-gray-400 mt-1">за последние 30 дней</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Доп. выручка от повышений</div><div class="text-page-h font-extrabold leading-none">+340K ₽</div><div class="text-label text-gray-400 mt-1">по сравнению с фикс. ценой</div></div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <span class="font-bold text-card-h">Как продаются билеты и когда менялась цена</span>
+        <select class="text-xs border border-gray-200 rounded px-2 py-1 bg-white"><option>Мастер и Маргарита</option><option>Щелкунчик</option><option>Вишневый сад</option></select>
+      </div>
+      <div class="px-5 pt-3 flex gap-4 text-label text-gray-400">
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-kassir mr-1 align-middle"></span>Сколько уже продано (нарастающим итогом)</span>
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-blue-400 mr-1 align-middle"></span>Текущая цена</span>
+        <span><span class="inline-block w-5 h-0 border-t-2 border-dashed border-kassir mr-1 align-middle"></span>Прогноз продаж</span>
+      </div>
+      <div class="p-5" style="height:280px"><canvas id="pricingChart"></canvas></div>
+      <div class="px-5 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+        <div class="flex items-start gap-2 text-xs text-gray-500">
+          <i class="bi bi-lightbulb text-kassir" style="font-size:14px"></i>
+          <span>Левая шкала — сколько билетов продано. Правая шкала — цена. Ступеньки на синей линии — моменты, когда сработало автоповышение. Пунктир — прогноз на оставшиеся дни до спектакля.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <span class="font-bold text-card-h">Ваши правила автоматического ценообразования</span>
+        <button class="px-3 py-1.5 bg-kassir rounded-lg text-xs font-semibold hover:bg-kassir-hover">+ Новое правило</button>
+      </div>
+      <div class="divide-y divide-gray-100">
+        <div class="px-5 py-4 hover:bg-gray-50">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2"><span class="font-semibold text-body-sm">Мастер и Маргарита</span><span class="text-label text-gray-400">/ Партер</span></div>
+            <div class="flex items-center gap-2"><span class="text-xs font-semibold px-2 py-0.5 rounded bg-green-50 text-green-600">Сработало ✓</span><button class="text-xs text-gray-400 hover:text-gray-700 ml-2">Изменить</button></div>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Условие:</span><span class="font-semibold">когда продано 70% мест</span></div>
+            <span class="text-gray-300">→</span>
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Действие:</span><span class="font-semibold">поднять цену на 15%</span></div>
+            <span class="text-gray-300">→</span>
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Результат:</span><span class="font-bold">3 000 ₽ → 3 450 ₽</span></div>
+          </div>
+        </div>
+        <div class="px-5 py-4 hover:bg-gray-50">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2"><span class="font-semibold text-body-sm">Мастер и Маргарита</span><span class="text-label text-gray-400">/ Амфитеатр</span></div>
+            <div class="flex items-center gap-2"><span class="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500">Ожидает (продано 28%)</span><button class="text-xs text-gray-400 hover:text-gray-700 ml-2">Изменить</button></div>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Условие:</span><span class="font-semibold">когда продано 50% мест</span></div>
+            <span class="text-gray-300">→</span>
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Действие:</span><span class="font-semibold">поднять цену на 10%</span></div>
+            <span class="text-gray-300">→</span>
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Результат:</span><span class="font-bold">2 000 ₽ → 2 200 ₽</span></div>
+          </div>
+          <div class="mt-2"><div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-gray-400 rounded-full" style="width:28%"></div></div><span class="text-xxs text-gray-400 mt-0.5">до срабатывания: 22% осталось</span></div>
+        </div>
+        <div class="px-5 py-4 hover:bg-gray-50">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2"><span class="font-semibold text-body-sm">Щелкунчик</span><span class="text-label text-gray-400">/ Все категории</span></div>
+            <div class="flex items-center gap-2"><span class="text-xs font-semibold px-2 py-0.5 rounded bg-kassir-light text-amber-700">Early bird: еще 10 дн.</span><button class="text-xs text-gray-400 hover:text-gray-700 ml-2">Изменить</button></div>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Условие:</span><span class="font-semibold">до 10 апреля - ранняя цена</span></div>
+            <span class="text-gray-300">→</span>
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Действие:</span><span class="font-semibold">после 10 апреля +20%</span></div>
+            <span class="text-gray-300">→</span>
+            <div class="flex items-center gap-1.5"><span class="text-gray-400">Результат:</span><span class="font-bold">4 800 ₽ → 5 760 ₽</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-finance">
+    <div class="flex justify-between items-center mb-5"><div><h1 class="text-page-h font-extrabold">Финансы</h1><p class="text-body-sm text-gray-400">Баланс и выручка</p></div><div class="flex gap-2"><button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50"><i class="bi bi-download text-label"></i> Выгрузить акт</button><button class="px-4 py-2 bg-kassir rounded-lg text-body-sm font-semibold">Пополнить баланс</button></div></div>
+
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Рекламный баланс</div><div class="text-page-h font-extrabold leading-none">24 500 ₽</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Выручка за 30 дней</div><div class="text-page-h font-extrabold leading-none">8.37M ₽</div><span class="inline-block mt-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700">▲ 8.6%</span></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Комиссия Кассира</div><div class="text-page-h font-extrabold leading-none">504K ₽</div><div class="text-label text-gray-400 mt-1">6% от выручки</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">К выплате</div><div class="text-page-h font-extrabold leading-none text-green-600">7.9M ₽</div></div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100"><span class="font-bold text-card-h">Выручка по мероприятиям</span></div>
+      <div class="p-5" style="height:240px"><canvas id="financeChart"></canvas></div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <div class="flex gap-0 border-b-0"><span class="px-3 py-1.5 text-body-sm font-semibold border-b-2 border-kassir cursor-pointer">Транзакции</span><span class="px-3 py-1.5 text-body-sm font-semibold text-gray-400 cursor-pointer">Документы</span></div>
+      </div>
+      <table class="data-table w-full">
+        <thead><tr class="border-b border-gray-200"><th class="text-left px-5 py-2.5">Дата</th><th class="text-left px-3 py-2.5">Описание</th><th class="text-left px-3 py-2.5">Мероприятие</th><th class="text-right px-5 py-2.5">Сумма</th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50"><td class="px-5 py-2.5 text-gray-400">Сегодня, 14:23</td><td class="px-3">Продажа билетов (12 шт.)</td><td class="px-3 font-semibold">Мастер и Маргарита</td><td class="px-5 text-right font-bold text-green-600">+35 400 ₽</td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-2.5 text-gray-400">Сегодня, 12:10</td><td class="px-3">Списание за рекламу</td><td class="px-3 font-semibold">Мастер и Маргарита</td><td class="px-5 text-right font-bold text-red-500">-1 240 ₽</td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-2.5 text-gray-400">Вчера, 19:45</td><td class="px-3">Продажа билетов (4 шт.)</td><td class="px-3 font-semibold">Щелкунчик</td><td class="px-5 text-right font-bold text-green-600">+24 000 ₽</td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-2.5 text-gray-400">Вчера, 17:30</td><td class="px-3">Возврат (1 шт.)</td><td class="px-3 font-semibold">Евгений Онегин</td><td class="px-5 text-right font-bold text-red-500">-3 200 ₽</td></tr>
+          <tr><td class="px-5 py-2.5 text-gray-400">Вчера, 11:00</td><td class="px-3">Пополнение рекламного баланса</td><td class="px-3 text-gray-400">—</td><td class="px-5 text-right font-bold text-blue-600">+15 000 ₽</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-docs">
+    <div class="flex justify-between items-center mb-5">
+      <h1 class="text-page-h font-extrabold">Документы</h1>
+      <button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-50"><i class="bi bi-download text-label"></i> Скачать все</button>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex gap-0 border-b-2 border-gray-200">
+        <span class="px-3 py-2 text-body-sm font-semibold border-b-2 border-kassir -mb-[2px] cursor-pointer">Все</span>
+        <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Договоры</span>
+        <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Акты сверки</span>
+        <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Отчеты</span>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="text-gray-400">Период:</span>
+        <input type="date" value="2025-01-01" class="border border-gray-200 rounded px-2 py-1.5 text-xs bg-white">
+        <span class="text-gray-300">—</span>
+        <input type="date" value="2025-04-01" class="border border-gray-200 rounded px-2 py-1.5 text-xs bg-white">
+        <button class="px-2.5 py-1.5 bg-kassir rounded text-xs font-semibold hover:bg-kassir-hover">Применить</button>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table class="data-table w-full">
+        <thead><tr class="border-b border-gray-200"><th class="text-left px-5 py-2.5">Документ</th><th class="text-left px-3 py-2.5">Тип</th><th class="text-left px-3 py-2.5">Дата</th><th class="text-left px-3 py-2.5">Статус</th><th class="px-3 py-2.5"></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><i class="bi bi-file-earmark-check text-gray-300" style="font-size:20px"></i><span class="font-semibold">Акт сверки за март 2025</span></div></td>
+            <td class="px-3 text-xs text-gray-400">Акт сверки</td><td class="px-3">01.04.2025</td>
+            <td class="px-3"><span class="text-xs font-semibold text-amber-600">Ожидает подписи</span></td>
+            <td class="px-3 text-right"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"><i class="bi bi-download"></i></button></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><i class="bi bi-file-earmark-check text-gray-300" style="font-size:20px"></i><span class="font-semibold">Акт сверки за февраль 2025</span></div></td>
+            <td class="px-3 text-xs text-gray-400">Акт сверки</td><td class="px-3">01.03.2025</td>
+            <td class="px-3"><span class="text-xs font-semibold text-green-600">Подписан</span></td>
+            <td class="px-3 text-right"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"><i class="bi bi-download"></i></button></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><i class="bi bi-file-earmark-spreadsheet text-gray-300" style="font-size:20px"></i><span class="font-semibold">Отчет по продажам Q1 2025</span></div></td>
+            <td class="px-3 text-xs text-gray-400">Отчет</td><td class="px-3">31.03.2025</td>
+            <td class="px-3"><span class="text-xs font-semibold text-green-600">Готов</span></td>
+            <td class="px-3 text-right"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"><i class="bi bi-download"></i></button></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><i class="bi bi-file-earmark-pdf text-gray-300" style="font-size:20px"></i><span class="font-semibold">Доп. соглашение №2</span></div></td>
+            <td class="px-3 text-xs text-gray-400">Договор</td><td class="px-3">15.03.2025</td>
+            <td class="px-3"><span class="text-xs font-semibold text-green-600">Подписан</span></td>
+            <td class="px-3 text-right"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"><i class="bi bi-download"></i></button></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><i class="bi bi-file-earmark-text text-gray-300" style="font-size:20px"></i><span class="font-semibold">Договор №КР-2024/187</span></div></td>
+            <td class="px-3 text-xs text-gray-400">Договор</td><td class="px-3">12.01.2024</td>
+            <td class="px-3"><span class="text-xs font-semibold text-green-600">Подписан</span></td>
+            <td class="px-3 text-right"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"><i class="bi bi-download"></i></button></td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3"><div class="flex items-center gap-2.5"><i class="bi bi-file-earmark-check text-gray-300" style="font-size:20px"></i><span class="font-semibold">Акт сверки за январь 2025</span></div></td>
+            <td class="px-3 text-xs text-gray-400">Акт сверки</td><td class="px-3">01.02.2025</td>
+            <td class="px-3"><span class="text-xs font-semibold text-green-600">Подписан</span></td>
+            <td class="px-3 text-right"><button class="text-xs font-semibold border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"><i class="bi bi-download"></i></button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-campaigns">
+    <div class="flex justify-between items-center mb-5"><div><h1 class="text-page-h font-extrabold">Мои кампании</h1><p class="text-body-sm text-gray-400">Все рекламные активности</p></div><button class="px-4 py-2 bg-kassir rounded-lg text-body-sm font-semibold" data-goto="create-campaign">+ Создать кампанию</button></div>
+
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Активных кампаний</div><div class="text-page-h font-extrabold leading-none">3</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Общий расход</div><div class="text-page-h font-extrabold leading-none">71 200 ₽</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Продажи от рекламы</div><div class="text-page-h font-extrabold leading-none">412</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Средний ROAS</div><div class="text-page-h font-extrabold leading-none">3.8x</div></div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <span class="font-bold text-card-h">Эффективность кампаний</span>
+      </div>
+      <div class="p-5" style="height:200px"><canvas id="campaignsChart"></canvas></div>
+    </div>
+
+    <div class="flex gap-0 border-b-2 border-gray-200 mb-4">
+      <span class="px-3 py-2 text-body-sm font-semibold border-b-2 border-kassir -mb-[2px] cursor-pointer">Активные (3)</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Пауза (1)</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Завершены (14)</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Модерация</span>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table class="data-table w-full">
+        <thead><tr class="border-b border-gray-200"><th class="text-left px-5 py-2.5">Мероприятие</th><th class="text-left px-3 py-2.5">Тип</th><th class="text-left px-3 py-2.5">Статус</th><th class="text-left px-3 py-2.5">Показы</th><th class="text-left px-3 py-2.5">Клики</th><th class="text-left px-3 py-2.5">Продажи</th><th class="text-left px-3 py-2.5">Расход</th><th class="text-left px-3 py-2.5">ROAS</th><th class="px-3"></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-yellow-200 to-amber-500 shrink-0"></div><div><div class="font-semibold text-body-sm">Мастер и Маргарита</div><div class="text-label text-gray-400">12 апр</div></div></div></td>
+            <td class="px-3 text-body-sm">Поиск + каталог</td><td class="px-3"><span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-50 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-600"></span>Активна</span></td>
+            <td class="px-3 font-bold">48 230</td><td class="px-3"><span class="font-bold">1 847</span><br><span class="text-label text-gray-400">CTR 3.8%</span></td><td class="px-3"><span class="font-bold">312</span><br><span class="text-label text-gray-400">189K ₽</span></td><td class="px-3 font-bold">45 000 ₽</td><td class="px-3 font-bold text-green-700">4.2x</td>
+            <td class="px-3"><div class="flex gap-1"><button class="text-label px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">⏸</button><button class="text-label px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">✎</button></div></td>
+          </tr>
+          <tr class="border-b border-gray-50">
+            <td class="px-5 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-blue-100 to-blue-600 shrink-0"></div><div><div class="font-semibold text-body-sm">Щелкунчик</div><div class="text-label text-gray-400">20 апр</div></div></div></td>
+            <td class="px-3 text-body-sm">Баннер</td><td class="px-3"><span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-green-50 text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-600"></span>Активна</span></td>
+            <td class="px-3 font-bold">124 500</td><td class="px-3"><span class="font-bold">3 120</span><br><span class="text-label text-gray-400">CTR 2.5%</span></td><td class="px-3"><span class="font-bold">89</span><br><span class="text-label text-gray-400">61K ₽</span></td><td class="px-3 font-bold">18 000 ₽</td><td class="px-3 font-bold text-green-700">3.4x</td>
+            <td class="px-3"><div class="flex gap-1"><button class="text-label px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">⏸</button><button class="text-label px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">✎</button></div></td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-green-100 to-green-600 shrink-0"></div><div><div class="font-semibold text-body-sm">Вишневый сад</div><div class="text-label text-gray-400">5 апр</div></div></div></td>
+            <td class="px-3 text-body-sm">Поиск</td><td class="px-3"><span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-yellow-50 text-yellow-700"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>Пауза</span></td>
+            <td class="px-3 font-bold">12 340</td><td class="px-3"><span class="font-bold">534</span><br><span class="text-label text-gray-400">CTR 4.3%</span></td><td class="px-3"><span class="font-bold">11</span><br><span class="text-label text-gray-400">21K ₽</span></td><td class="px-3 font-bold">8 200 ₽</td><td class="px-3 font-bold text-green-700">2.5x</td>
+            <td class="px-3"><div class="flex gap-1"><button class="text-label px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">▶</button><button class="text-label px-2 py-1 border border-gray-200 rounded hover:bg-gray-50">✎</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-create-campaign">
+    <h1 class="text-page-h font-extrabold mb-1">Новая кампания</h1>
+    <p class="text-body-sm text-gray-400 mb-5">Шаг 1 из 5</p>
+    <div class="bg-white border border-gray-200 rounded-xl p-6">
+      <div class="flex gap-2.5 mb-6">
+        <div class="flex-1 text-center py-3 rounded-lg bg-kassir-light border-2 border-kassir font-bold text-body-sm">1. Мероприятие</div>
+        <div class="flex-1 text-center py-3 rounded-lg bg-gray-100 text-gray-400 text-body-sm">2. Тип</div>
+        <div class="flex-1 text-center py-3 rounded-lg bg-gray-100 text-gray-400 text-body-sm">3. Таргетинг</div>
+        <div class="flex-1 text-center py-3 rounded-lg bg-gray-100 text-gray-400 text-body-sm">4. Бюджет</div>
+        <div class="flex-1 text-center py-3 rounded-lg bg-gray-100 text-gray-400 text-body-sm">5. Запуск</div>
+      </div>
+      <div class="text-center py-8 text-gray-400">Выберите мероприятие<br><br><button class="px-5 py-2 bg-kassir rounded-lg text-body-sm font-semibold">Выбрать</button></div>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-ad-slots">
+    <h1 class="text-page-h font-extrabold mb-5">Рекламные места</h1>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-kassir transition-colors cursor-pointer"><i class="bi bi-search text-[28px] text-gray-300"></i><div class="mt-2 font-semibold">Поисковая выдача</div><div class="text-label text-gray-400 mt-1">CPC от 5 ₽/клик</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-kassir transition-colors cursor-pointer"><i class="bi bi-house text-[28px] text-gray-300"></i><div class="mt-2 font-semibold">Главная</div><div class="text-label text-gray-400 mt-1">от 3 000 ₽/день</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-kassir transition-colors cursor-pointer"><i class="bi bi-grid-3x3 text-[28px] text-gray-300"></i><div class="mt-2 font-semibold">Категории</div><div class="text-label text-gray-400 mt-1">CPC от 3 ₽</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-kassir transition-colors cursor-pointer"><i class="bi bi-ticket-perforated text-[28px] text-gray-300"></i><div class="mt-2 font-semibold">Карточка события</div><div class="text-label text-gray-400 mt-1">CPM от 80 ₽</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-kassir transition-colors cursor-pointer"><i class="bi bi-phone text-[28px] text-gray-300"></i><div class="mt-2 font-semibold">Приложение</div><div class="text-label text-gray-400 mt-1">CPC от 8 ₽</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-6 text-center hover:border-kassir transition-colors cursor-pointer"><i class="bi bi-star text-[28px] text-gray-300"></i><div class="mt-2 font-semibold">Premium</div><div class="text-label text-gray-400 mt-1">от 15 000 ₽/день</div></div>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-mailings">
+    <div class="flex justify-between items-center mb-5"><div><h1 class="text-page-h font-extrabold">Рассылки</h1><p class="text-body-sm text-gray-400">Email-маркетинг по базе покупателей</p></div><button class="px-4 py-2 bg-kassir rounded-lg text-body-sm font-semibold">+ Новая рассылка</button></div>
+
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Отправлено за месяц</div><div class="text-page-h font-extrabold leading-none">4 817</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Ср. open rate</div><div class="text-page-h font-extrabold leading-none">34.17%</div><span class="inline-block mt-1 text-label font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-700">выше среднего</span></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Ср. click rate</div><div class="text-page-h font-extrabold leading-none">5.8%</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Продажи из рассылок</div><div class="text-page-h font-extrabold leading-none">89</div><div class="text-label text-gray-400 mt-1">на 267K ₽</div></div>
+    </div>
+
+    <div class="flex gap-0 border-b-2 border-gray-200 mb-4">
+      <span class="px-3 py-2 text-body-sm font-semibold border-b-2 border-kassir -mb-[2px] cursor-pointer">Ручные рассылки</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Автосценарии</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Шаблоны</span>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table class="data-table w-full">
+        <thead><tr class="border-b border-gray-200"><th class="text-left px-5 py-2.5">Рассылка</th><th class="text-left px-3 py-2.5">Сегмент</th><th class="text-left px-3 py-2.5">Отправлено</th><th class="text-left px-3 py-2.5">Open rate</th><th class="text-left px-3 py-2.5">Click rate</th><th class="text-left px-3 py-2.5">Продажи</th><th class="text-left px-3 py-2.5">Дата</th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50"><td class="px-5 py-3 font-semibold">Анонс: Мастер и Маргарита</td><td class="px-3 text-xs">Постоянные (драма)</td><td class="px-3">2 337</td><td class="px-3 font-bold">36.2%</td><td class="px-3 font-bold">6.2%</td><td class="px-3 font-bold text-green-700">52</td><td class="px-3 text-gray-400">15 мар</td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-3 font-semibold">Напоминание: Щелкунчик</td><td class="px-3 text-xs">Все покупатели (театр)</td><td class="px-3">1 890</td><td class="px-3 font-bold">29.4%</td><td class="px-3 font-bold">4.1%</td><td class="px-3 font-bold text-green-700">23</td><td class="px-3 text-gray-400">12 мар</td></tr>
+          <tr><td class="px-5 py-3 font-semibold">Промокод SPRING25</td><td class="px-3 text-xs">Спящие (6+ мес.)</td><td class="px-3">590</td><td class="px-3 font-bold">41.3%</td><td class="px-3 font-bold">9.8%</td><td class="px-3 font-bold text-green-700">14</td><td class="px-3 text-gray-400">8 мар</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-promo-codes">
+    <div class="flex justify-between items-center mb-5"><div><h1 class="text-page-h font-extrabold">Промокоды и акции</h1></div><div class="flex gap-2"><button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-body-sm font-semibold">+ Промоакция</button><button class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-body-sm font-semibold">+ Виральный</button><button class="px-4 py-2 bg-kassir rounded-lg text-body-sm font-semibold">+ Промокод</button></div></div>
+
+    <div class="grid grid-cols-4 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Активных кодов</div><div class="text-page-h font-extrabold leading-none">6</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Использовано за месяц</div><div class="text-page-h font-extrabold leading-none">289</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Выручка по промокодам</div><div class="text-page-h font-extrabold leading-none">1.48M ₽</div></div>
+      <div class="bg-white border border-gray-200 rounded-xl p-4"><div class="text-xs text-gray-400 mb-1">Ср. скидка</div><div class="text-page-h font-extrabold leading-none">18%</div></div>
+    </div>
+
+    <div class="flex gap-0 border-b-2 border-gray-200 mb-4">
+      <span class="px-3 py-2 text-body-sm font-semibold border-b-2 border-kassir -mb-[2px] cursor-pointer">Промокоды (6)</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Промоакции (2)</span>
+      <span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Виральные (1)</span>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table class="data-table w-full">
+        <thead><tr class="border-b border-gray-200"><th class="text-left px-5 py-2.5">Код</th><th class="text-left px-3 py-2.5">Тип</th><th class="text-left px-3 py-2.5">Скидка</th><th class="text-left px-3 py-2.5">Мероприятие</th><th class="text-left px-3 py-2.5">Исп.</th><th class="text-left px-3 py-2.5">Выручка</th><th class="text-left px-3 py-2.5">Статус</th><th class="px-3"></th></tr></thead>
+        <tbody>
+          <tr class="border-b border-gray-50"><td class="px-5 py-3"><code class="text-xs font-bold bg-gray-100 px-1.5 py-0.5 rounded">SPRING25</code></td><td class="px-3 text-xs">% скидка</td><td class="px-3 font-bold">25%</td><td class="px-3">Все</td><td class="px-3 font-bold">147</td><td class="px-3 font-bold">892K ₽</td><td class="px-3"><span class="text-xs font-semibold text-amber-600">Ист. через 2 дн.</span></td><td class="px-3"><button class="text-xs text-gray-400 hover:text-gray-700">Изменить</button></td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-3"><code class="text-xs font-bold bg-gray-100 px-1.5 py-0.5 rounded">VIP2025</code></td><td class="px-3 text-xs">Фикс.</td><td class="px-3 font-bold">1 000 ₽</td><td class="px-3">Мастер и Маргарита</td><td class="px-3 font-bold">53</td><td class="px-3 font-bold">318K ₽</td><td class="px-3"><span class="text-xs font-semibold text-green-600">Активен</span></td><td class="px-3"><button class="text-xs text-gray-400 hover:text-gray-700">Изменить</button></td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-3"><code class="text-xs font-bold bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">ДРУГ10</code></td><td class="px-3 text-xs">Виральный</td><td class="px-3 font-bold">10→15→20%</td><td class="px-3">Вишневый сад</td><td class="px-3 font-bold">89</td><td class="px-3 font-bold">267K ₽</td><td class="px-3"><span class="text-xs font-semibold text-green-600">Активен</span></td><td class="px-3"><button class="text-xs text-gray-400 hover:text-gray-700">Волны →</button></td></tr>
+          <tr class="border-b border-gray-50"><td class="px-5 py-3"><code class="text-xs font-bold bg-gray-100 px-1.5 py-0.5 rounded">EARLYBIRD</code></td><td class="px-3 text-xs">Early bird</td><td class="px-3 font-bold">20%</td><td class="px-3">Щелкунчик</td><td class="px-3 font-bold">0</td><td class="px-3 text-gray-400">—</td><td class="px-3"><span class="text-xs font-semibold text-gray-400">Черновик</span></td><td class="px-3"><button class="text-xs text-gray-400 hover:text-gray-700">Изменить</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-widgets">
+    <h1 class="text-page-h font-extrabold mb-5">Виджеты и лендинги</h1>
+    <div class="flex gap-0 border-b-2 border-gray-200 mb-4"><span class="px-3 py-2 text-body-sm font-semibold border-b-2 border-kassir -mb-[2px] cursor-pointer">Виджет продаж</span><span class="px-3 py-2 text-body-sm font-semibold text-gray-400 cursor-pointer">Лендинги</span></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <div class="font-bold mb-3">Код виджета</div>
+        <div class="bg-gray-50 rounded-lg p-3 font-mono text-label text-gray-600 mb-3">&lt;script src="https://kassir.ru/widget/v2/artlife.js"&gt;&lt;/script&gt;<br>&lt;div id="kassir-widget" data-event="12345"&gt;&lt;/div&gt;</div>
+        <button class="px-3 py-1.5 bg-white border border-gray-200 rounded text-xs font-semibold hover:bg-gray-50"><i class="bi bi-clipboard text-label"></i> Копировать</button>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-5">
+        <div class="font-bold mb-3">Статистика виджета</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-xs text-gray-400">Показы</div><div class="text-[18px] font-extrabold">3 420</div></div>
+          <div><div class="text-xs text-gray-400">Продажи</div><div class="text-[18px] font-extrabold">156</div></div>
+          <div><div class="text-xs text-gray-400">Конверсия</div><div class="text-[18px] font-extrabold">4.6%</div></div>
+          <div><div class="text-xs text-gray-400">Выручка</div><div class="text-[18px] font-extrabold">468K ₽</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section hidden" id="page-help">
+    <h1 class="text-page-h font-extrabold mb-5">Помощь</h1>
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-white border border-gray-200 rounded-xl p-5 text-center hover:border-kassir transition-colors cursor-pointer">
+        <i class="bi bi-play-circle text-[28px] text-gray-300"></i>
+        <div class="mt-2 font-semibold">Быстрый старт</div>
+        <div class="text-label text-gray-400 mt-1">Видео-тур по кабинету за 3 минуты</div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-5 text-center hover:border-kassir transition-colors cursor-pointer">
+        <i class="bi bi-book text-[28px] text-gray-300"></i>
+        <div class="mt-2 font-semibold">Гайды</div>
+        <div class="text-label text-gray-400 mt-1">Пошаговые инструкции по всем разделам</div>
+      </div>
+      <div class="bg-white border border-gray-200 rounded-xl p-5 text-center hover:border-kassir transition-colors cursor-pointer">
+        <i class="bi bi-chat-dots text-[28px] text-gray-300"></i>
+        <div class="mt-2 font-semibold">Чат поддержки</div>
+        <div class="text-label text-gray-400 mt-1">Ответим в течение 10 минут</div>
+      </div>
+    </div>
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 font-bold text-card-h">Популярные статьи</div>
+      <div class="divide-y divide-gray-100">
+        <a class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer"><i class="bi bi-file-text text-gray-300"></i><div class="flex-1"><div class="text-body-sm font-semibold">Как запустить первую рекламную кампанию</div><div class="text-label text-gray-400">5 шагов от создания до результата</div></div><i class="bi bi-chevron-right text-gray-300"></i></a>
+        <a class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer"><i class="bi bi-file-text text-gray-300"></i><div class="flex-1"><div class="text-body-sm font-semibold">Как читать аналитику мероприятий</div><div class="text-label text-gray-400">Что значат метрики и на что обращать внимание</div></div><i class="bi bi-chevron-right text-gray-300"></i></a>
+        <a class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer"><i class="bi bi-file-text text-gray-300"></i><div class="flex-1"><div class="text-body-sm font-semibold">Как создать виральный промокод</div><div class="text-label text-gray-400">Пирамида скидок: настройка и кейсы</div></div><i class="bi bi-chevron-right text-gray-300"></i></a>
+        <a class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer"><i class="bi bi-file-text text-gray-300"></i><div class="flex-1"><div class="text-body-sm font-semibold">Как настроить динамическое ценообразование</div><div class="text-label text-gray-400">Early bird, лесенки, автоправила</div></div><i class="bi bi-chevron-right text-gray-300"></i></a>
+        <a class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 cursor-pointer"><i class="bi bi-file-text text-gray-300"></i><div class="flex-1"><div class="text-body-sm font-semibold">Как заполнить зал: кейс продвижения</div><div class="text-label text-gray-400">Реальный пример от организатора на 1 200 мест</div></div><i class="bi bi-chevron-right text-gray-300"></i></a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- модалка нового правила -->
+  <div id="pricing-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40" id="modal-overlay"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl w-[520px] max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h2 class="text-[18px] font-extrabold">Новое правило ценообразования</h2>
+        <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400" id="modal-close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="p-6 space-y-5">
+        <div>
+          <label class="text-xs font-semibold text-gray-500 block mb-1.5">Мероприятие</label>
+          <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-body-sm bg-white"><option>Мастер и Маргарита</option><option>Вишневый сад</option><option>Щелкунчик</option><option>Евгений Онегин</option></select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-500 block mb-1.5">Категория билетов</label>
+          <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-body-sm bg-white"><option>Все категории</option><option>Партер</option><option>Амфитеатр</option><option>Балкон</option><option>VIP-ложа</option></select>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <div class="text-xs font-semibold text-gray-500 mb-3">Условие срабатывания</div>
+          <div class="flex items-center gap-2 text-body-sm">
+            <span>Когда продано</span>
+            <input type="number" value="70" class="w-16 border border-gray-200 rounded px-2 py-1.5 text-center font-bold">
+            <span>% мест</span>
+          </div>
+          <div class="mt-3 text-label text-gray-400">Или вы можете задать условие по дате:</div>
+          <div class="flex items-center gap-2 mt-1.5 text-body-sm">
+            <span>После</span>
+            <input type="date" value="2026-04-01" class="border border-gray-200 rounded px-2 py-1.5 text-xs">
+          </div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <div class="text-xs font-semibold text-gray-500 mb-3">Действие</div>
+          <div class="flex items-center gap-2 text-body-sm">
+            <span>Поднять цену на</span>
+            <input type="number" value="15" class="w-16 border border-gray-200 rounded px-2 py-1.5 text-center font-bold">
+            <select class="border border-gray-200 rounded px-2 py-1.5 text-body-sm bg-white"><option>%</option><option>₽</option></select>
+          </div>
+        </div>
+        <div class="bg-kassir-light rounded-xl p-4">
+          <div class="text-xs font-semibold text-gray-500 mb-1">Что произойдет</div>
+          <div class="text-body-sm">Текущая цена <strong>3 000 ₽</strong> → после срабатывания <strong>3 450 ₽</strong></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 px-6 py-4 border-t border-gray-100">
+        <button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-body-sm font-semibold hover:bg-gray-50" id="modal-cancel">Отмена</button>
+        <button class="px-5 py-2 bg-kassir rounded-lg text-body-sm font-semibold hover:bg-kassir-hover">Создать правило</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const LAST_PAGE = 'kassir_last_page';
+let activePage = localStorage.getItem(LAST_PAGE) || 'dashboard';
+
+function switchPage(id) {
+  const el = document.getElementById('page-' + id);
+  if (!el) { console.warn('нет страницы:', id); return }
+  document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
+  el.classList.remove('hidden');
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.remove('active');
+    if (l.dataset.page === id) l.classList.add('active');
+  });
+  localStorage.setItem(LAST_PAGE, id);
+  activePage = id;
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+  // запускаем счетчики на видимой странице
+  runCounters(el);
+}
+
+document.querySelectorAll('.nav-link').forEach(link =>
+  link.addEventListener('click', e => { e.preventDefault(); switchPage(link.dataset.page) })
+);
+document.querySelectorAll('[data-goto]').forEach(btn =>
+  btn.addEventListener('click', () => switchPage(btn.dataset.goto))
+);
+if (activePage !== 'dashboard') switchPage(activePage);
+
+// === counter animation ===
+function runCounters(container) {
+  const el = container || document;
+  el.querySelectorAll('.kpi-counter').forEach(c => {
+    if (c.dataset.done) return;
+    c.dataset.done = '1';
+    const target = parseInt(c.dataset.target);
+    const suffix = c.dataset.suffix || '';
+    const dur = 700;
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      const v = Math.round(target * ease);
+      c.textContent = v.toLocaleString('ru-RU') + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+// запускаем на дашборде при загрузке
+setTimeout(() => runCounters(document.getElementById('page-dashboard')), 300);
+
+// === events: list + detail switching ===
+const eventsData = {
+  master: { title: 'Мастер и Маргарита', sub: '12 апреля, МХТ им. Чехова / Продано 4 210 из 15 000', sold: '4 210', total: '15 000', revenue: '12.6M ₽', avg: '2 981 ₽', returns: '1.2%',
+    funnel: [{n:'Просмотр карточки',v:48230},{n:'Добавление в корзину',v:6740,p:'14%'},{n:'Оплата',v:4210,p:'8.7%'}],
+    tickets: [{n:'Партер',s:2100,t:3000,p:70},{n:'Амфитеатр',s:1400,t:5000,p:28},{n:'Балкон',s:510,t:5000,p:10},{n:'VIP-ложа',s:200,t:2000,p:10}],
+    prices: [{r:'до 1 500 ₽',v:504,p:12},{r:'1 500-3 000 ₽',v:1599,p:38},{r:'3 000-5 000 ₽',v:1177,p:28},{r:'5 000-8 000 ₽',v:631,p:15},{r:'от 8 000 ₽',v:299,p:7}] },
+  cherry: { title: 'Вишневый сад', sub: '5 апреля, Театр Вахтангова / Продано 3 400 из 6 200', sold: '3 400', total: '6 200', revenue: '5.1M ₽', avg: '1 500 ₽', returns: '2.1%',
+    funnel: [{n:'Просмотр карточки',v:31500},{n:'Добавление в корзину',v:5100,p:'16.2%'},{n:'Оплата',v:3400,p:'10.8%'}],
+    tickets: [{n:'Партер',s:1200,t:2000,p:60},{n:'Амфитеатр',s:1100,t:2200,p:50},{n:'Балкон',s:800,t:1500,p:53},{n:'VIP-ложа',s:300,t:500,p:60}],
+    prices: [{r:'до 1 500 ₽',v:1020,p:30},{r:'1 500-3 000 ₽',v:1360,p:40},{r:'3 000-5 000 ₽',v:680,p:20},{r:'5 000-8 000 ₽',v:272,p:8},{r:'от 8 000 ₽',v:68,p:2}] },
+  swan:   { title: 'Щелкунчик', sub: '20 апреля, Большой театр / Продано 890 из 1 200', sold: '890', total: '1 200', revenue: '4.3M ₽', avg: '4 830 ₽', returns: '0.4%',
+    funnel: [{n:'Просмотр карточки',v:22400},{n:'Добавление в корзину',v:2870,p:'12.8%'},{n:'Оплата',v:890,p:'4%'}],
+    tickets: [{n:'Партер',s:310,t:400,p:78},{n:'Амфитеатр',s:280,t:350,p:80},{n:'Балкон',s:190,t:300,p:63},{n:'VIP-ложа',s:110,t:150,p:73}],
+    prices: [{r:'до 1 500 ₽',v:0,p:0},{r:'1 500-3 000 ₽',v:89,p:10},{r:'3 000-5 000 ₽',v:267,p:30},{r:'5 000-8 000 ₽',v:356,p:40},{r:'от 8 000 ₽',v:178,p:20}] },
+  onegin: { title: 'Евгений Онегин', sub: '28 апреля, Большой театр / Продано 720 из 4 000', sold: '720', total: '4 000', revenue: '2.9M ₽', avg: '4 027 ₽', returns: '8.3%',
+    funnel: [{n:'Просмотр карточки',v:18400},{n:'Добавление в корзину',v:1620,p:'8.8%'},{n:'Оплата',v:720,p:'3.9%'}],
+    tickets: [{n:'Партер',s:180,t:800,p:23},{n:'Амфитеатр',s:290,t:1500,p:19},{n:'Балкон',s:140,t:1200,p:12},{n:'VIP-ложа',s:110,t:500,p:22}],
+    prices: [{r:'до 1 500 ₽',v:86,p:12},{r:'1 500-3 000 ₽',v:216,p:30},{r:'3 000-5 000 ₽',v:230,p:32},{r:'5 000-8 000 ₽',v:130,p:18},{r:'от 8 000 ₽',v:58,p:8}] },
+  hamlet: { title: 'Гамлет', sub: '15 марта, МХТ им. Чехова / Итого: 1 104 из 1 200', sold: '1 104', total: '1 200', revenue: '5.7M ₽', avg: '5 163 ₽', returns: '1.8%', archived: true,
+    funnel: [{n:'Просмотр карточки',v:28100},{n:'Добавление в корзину',v:3840,p:'13.7%'},{n:'Оплата',v:1104,p:'3.9%'}],
+    tickets: [{n:'Партер',s:420,t:450,p:93},{n:'Амфитеатр',s:380,t:400,p:95},{n:'Балкон',s:210,t:250,p:84},{n:'VIP-ложа',s:94,t:100,p:94}],
+    prices: [{r:'до 1 500 ₽',v:66,p:6},{r:'1 500-3 000 ₽',v:177,p:16},{r:'3 000-5 000 ₽',v:353,p:32},{r:'5 000-8 000 ₽',v:331,p:30},{r:'от 8 000 ₽',v:177,p:16}] },
+  seagull: { title: 'Чайка', sub: '2 марта, Театр Вахтангова / Итого: 624 из 800', sold: '624', total: '800', revenue: '1.9M ₽', avg: '3 045 ₽', returns: '0.9%', archived: true,
+    funnel: [{n:'Просмотр карточки',v:15200},{n:'Добавление в корзину',v:1890,p:'12.4%'},{n:'Оплата',v:624,p:'4.1%'}],
+    tickets: [{n:'Партер',s:240,t:300,p:80},{n:'Амфитеатр',s:210,t:280,p:75},{n:'Балкон',s:120,t:150,p:80},{n:'VIP-ложа',s:54,t:70,p:77}],
+    prices: [{r:'до 1 500 ₽',v:112,p:18},{r:'1 500-3 000 ₽',v:237,p:38},{r:'3 000-5 000 ₽',v:162,p:26},{r:'5 000-8 000 ₽',v:81,p:13},{r:'от 8 000 ₽',v:32,p:5}] },
+  lake: { title: 'Лебединое озеро', sub: '18 февраля, Большой театр / Аншлаг: 1 740 из 1 740', sold: '1 740', total: '1 740', revenue: '11.3M ₽', avg: '6 494 ₽', returns: '0.3%', archived: true,
+    funnel: [{n:'Просмотр карточки',v:52300},{n:'Добавление в корзину',v:7120,p:'13.6%'},{n:'Оплата',v:1740,p:'3.3%'}],
+    tickets: [{n:'Партер',s:520,t:520,p:100},{n:'Амфитеатр',s:680,t:680,p:100},{n:'Балкон',s:340,t:340,p:100},{n:'VIP-ложа',s:200,t:200,p:100}],
+    prices: [{r:'до 1 500 ₽',v:0,p:0},{r:'1 500-3 000 ₽',v:174,p:10},{r:'3 000-5 000 ₽',v:435,p:25},{r:'5 000-8 000 ₽',v:609,p:35},{r:'от 8 000 ₽',v:522,p:30}] }
+};
+
+document.querySelectorAll('.event-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const ev = eventsData[card.dataset.event] || eventsData.master;
+    document.getElementById('event-title').textContent = ev.title;
+    document.getElementById('event-subtitle').textContent = ev.sub;
+    // бейдж "Архив" если завершено
+    const badge = document.getElementById('event-badge');
+    if (badge) { badge.style.display = ev.archived ? 'inline-flex' : 'none'; }
+    // обновляем KPI
+    const kpis = document.querySelectorAll('#event-detail .grid.grid-cols-4 .text-page-h');
+    if (kpis[0]) kpis[0].innerHTML = ev.sold + ' <span class="text-card-h text-gray-400 font-normal">/ ' + ev.total + '</span>';
+    if (kpis[1]) kpis[1].textContent = ev.revenue;
+    if (kpis[2]) kpis[2].textContent = ev.avg;
+    if (kpis[3]) kpis[3].textContent = ev.returns;
+    // обновляем воронку
+    if (ev.funnel) {
+      const fb = document.getElementById('funnel-body');
+      if (fb) {
+        const total = ev.funnel[0].v;
+        fb.innerHTML = ev.funnel.map((step, i) => {
+          const w = i === 0 ? 100 : Math.round(step.v / total * 100 * 4);
+          const colors = ['bg-kassir','bg-amber-400','bg-green-500'];
+          const pct = step.p ? ' <span class="text-gray-400 font-normal">(' + step.p + ')</span>' : '';
+          return '<div><div class="flex justify-between text-xs mb-1"><span>' + step.n + '</span><span class="font-bold">' + step.v.toLocaleString('ru-RU') + pct + '</span></div><div class="h-7 ' + colors[i] + ' rounded" style="width:' + Math.max(w, 5) + '%"></div></div>';
+        }).join('') + '<div class="pt-2 border-t border-gray-100 text-xs text-gray-500">' + Math.round((1 - ev.funnel[2].v / ev.funnel[1].v) * 100) + '% добавивших в корзину не завершают оплату.</div>';
+      }
+    }
+    // обновляем типы билетов
+    if (ev.tickets) {
+      const tb = document.getElementById('tickets-body');
+      if (tb) {
+        tb.innerHTML = ev.tickets.map(t => {
+          const color = t.p >= 60 ? 'bg-green-500' : t.p >= 25 ? 'bg-kassir' : 'bg-red-400';
+          return '<div><div class="flex justify-between text-xs mb-1"><span>' + t.n + '</span><span><strong>' + t.s.toLocaleString('ru-RU') + '</strong> / ' + t.t.toLocaleString('ru-RU') + ' (' + t.p + '%)</span></div><div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full ' + color + ' rounded-full" style="width:' + t.p + '%"></div></div></div>';
+        }).join('');
+      }
+    }
+    // обновляем распоясовку
+    if (ev.prices) {
+      const pb = document.getElementById('prices-body');
+      if (pb) {
+        const totalSold = parseInt(ev.sold.replace(/\s/g, ''));
+        const avgCheck = ev.avg;
+        pb.innerHTML = ev.prices.map(pr => {
+          const colors = ['bg-gray-400','bg-kassir','bg-amber-400','bg-orange-400','bg-purple-400'];
+          const ci = ev.prices.indexOf(pr);
+          return '<div class="flex items-center gap-3"><span class="w-24 text-xs text-right shrink-0">' + pr.r + '</span><div class="flex-1 h-5 bg-gray-100 rounded overflow-hidden"><div class="h-full ' + colors[ci] + ' rounded" style="width:' + Math.max(pr.p * 2, 2) + '%"></div></div><span class="w-20 text-xs"><strong>' + pr.v.toLocaleString('ru-RU') + '</strong> <span class="text-gray-400">(' + pr.p + '%)</span></span></div>';
+        }).join('') + '<div class="pt-2 border-t border-gray-100 text-label text-gray-400">Ср. чек: ' + avgCheck + '</div>';
+      }
+    }
+
+    document.getElementById('events-list').classList.add('hidden');
+    document.getElementById('event-detail').classList.remove('hidden');
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+  });
+});
+
+const backBtn = document.getElementById('btn-back-to-list');
+if (backBtn) backBtn.addEventListener('click', () => {
+  document.getElementById('event-detail').classList.add('hidden');
+  document.getElementById('events-list').classList.remove('hidden');
+});
+
+// === pricing modal ===
+document.querySelectorAll('button').forEach(btn => {
+  if (btn.textContent.trim() === '+ Новое правило') {
+    btn.addEventListener('click', () => document.getElementById('pricing-modal').classList.remove('hidden'));
+  }
+});
+['modal-close','modal-cancel','modal-overlay'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => document.getElementById('pricing-modal').classList.add('hidden'));
+});
+
+// === charts ===
+Chart.defaults.font.family = "'Golos Text', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(30,30,30,.9)';
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+Chart.defaults.plugins.tooltip.padding = 10;
+const ANIM = { duration: 800, easing: 'easeOutQuart' };
+
+// revenue donut
+new Chart(document.getElementById('revenueDonut'), {
+  type: 'doughnut',
+  data: { labels: ['Мастер и Маргарита','Вишневый сад','Щелкунчик','Остальные'], datasets: [{ data: [3.72,2.68,1.41,0.56], backgroundColor: ['#FFC800','#fbbf24','#60a5fa','#d4d4d4'], borderWidth: 0, hoverOffset: 6 }] },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '62%', animation: ANIM, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed.toFixed(2) + 'M ₽' } } } }
+});
+
+// === sales chart with full filter support ===
+function genData(len, min, max) { return Array.from({length: len}, () => Math.floor(min + Math.random() * (max - min))); }
+
+const allSalesData = {
+  all: {
+    '7d':  { labels: ['25 мар','26 мар','27 мар','28 мар','29 мар','30 мар','31 мар'], org: [57,94,77,63,89,51,74], ads: [16,30,26,18,27,14,19], email: [5,8,7,4,6,3,5] },
+    '30d': { labels: Array.from({length:30}, (_,i) => (i+1)+' мар'), org: [67,82,45,91,73,55,88,102,64,78,93,41,86,71,59,95,110,48,83,69,57,94,77,63,89,51,74,98,85,62], ads: [18,24,12,31,19,15,27,35,17,22,29,11,25,20,14,28,38,13,23,21,16,30,26,18,27,14,19,33,24,17], email: [4,6,3,8,5,4,7,9,5,6,8,3,7,5,4,8,10,3,6,5,4,7,6,4,8,3,5,9,7,4] },
+    '90d': { labels: Array.from({length:90}, (_,i) => { const m = Math.floor(i/30); return (i%30+1)+' '+['янв','фев','мар'][m]; }), org: genData(90,40,110), ads: genData(90,8,38), email: genData(90,2,12) }
+  },
+  master: { '7d': { labels: ['25 мар','26 мар','27 мар','28 мар','29 мар','30 мар','31 мар'], org: [30,45,38,28,42,24,35], ads: [8,15,12,9,14,7,10], email: [2,4,3,2,3,1,2] }, '30d': null, '90d': null },
+  swan:   { '7d': { labels: ['25 мар','26 мар','27 мар','28 мар','29 мар','30 мар','31 мар'], org: [12,18,15,10,16,8,13], ads: [3,6,5,4,5,2,4], email: [1,2,1,1,2,1,1] }, '30d': null, '90d': null },
+  cherry: { '7d': { labels: ['25 мар','26 мар','27 мар','28 мар','29 мар','30 мар','31 мар'], org: [15,31,24,25,31,19,26], ads: [5,9,9,5,8,5,5], email: [2,2,3,1,1,1,2] }, '30d': null, '90d': null }
+};
+// заполняем null-ы сгенеренными данными
+for (const ev of ['master','swan','cherry']) {
+  for (const p of ['30d','90d']) {
+    const len = p === '30d' ? 30 : 90;
+    const base = allSalesData.all[p];
+    allSalesData[ev][p] = {
+      labels: base.labels,
+      org: base.org.map(v => Math.round(v * (0.3 + Math.random() * 0.3))),
+      ads: base.ads.map(v => Math.round(v * (0.3 + Math.random() * 0.3))),
+      email: base.email.map(v => Math.round(v * (0.3 + Math.random() * 0.3)))
+    };
+  }
+}
+
+let curPeriod = '30d', curEvent = 'all', curChannel = 'all';
+
+const salesChart = new Chart(document.getElementById('salesChart'), {
+  type: 'bar',
+  data: {
+    labels: allSalesData.all['30d'].labels,
+    datasets: [
+      { label: 'Реклама', data: allSalesData.all['30d'].ads, backgroundColor: '#FFC800', borderRadius: 2, barPercentage: .85 },
+      { label: 'Органика', data: allSalesData.all['30d'].org, backgroundColor: '#d4d4d4', borderRadius: 2, barPercentage: .85 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: ANIM,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10, padding: 15 } }, tooltip: { mode: 'index', callbacks: { footer: items => 'Итого: ' + items.reduce((s,i) => s + i.parsed.y, 0) } } },
+    scales: { x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 10 } } }, y: { stacked: true, grid: { color: '#f0f0f0' } } }
+  }
+});
+
+function updateSalesChart() {
+  const src = allSalesData[curEvent] || allSalesData.all;
+  const d = src[curPeriod] || allSalesData.all[curPeriod];
+  salesChart.data.labels = d.labels;
+  if (curChannel === 'org') {
+    salesChart.data.datasets = [{ label: 'Органика', data: d.org, backgroundColor: '#d4d4d4', borderRadius: 2, barPercentage: .85 }];
+  } else if (curChannel === 'ads') {
+    salesChart.data.datasets = [{ label: 'Реклама', data: d.ads, backgroundColor: '#FFC800', borderRadius: 2, barPercentage: .85 }];
+  } else if (curChannel === 'email') {
+    salesChart.data.datasets = [{ label: 'Email', data: d.email, backgroundColor: '#a855f7', borderRadius: 2, barPercentage: .85 }];
+  } else {
+    salesChart.data.datasets = [
+      { label: 'Реклама', data: d.ads, backgroundColor: '#FFC800', borderRadius: 2, barPercentage: .85 },
+      { label: 'Органика', data: d.org, backgroundColor: '#d4d4d4', borderRadius: 2, barPercentage: .85 }
+    ];
+  }
+  salesChart.update();
+}
+
+// period buttons
+document.querySelectorAll('#period-btns button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    curPeriod = btn.dataset.period;
+    document.querySelectorAll('#period-btns button').forEach(b => { b.classList.remove('bg-kassir'); b.classList.add('bg-white'); });
+    btn.classList.add('bg-kassir'); btn.classList.remove('bg-white');
+    updateSalesChart();
+  });
+});
+// event filter
+document.getElementById('filter-event')?.addEventListener('change', e => { curEvent = e.target.value; updateSalesChart(); });
+// channel filter
+document.getElementById('filter-channel')?.addEventListener('change', e => { curChannel = e.target.value; updateSalesChart(); });
+
+// sources donut
+new Chart(document.getElementById('sourcesChart'), {
+  type: 'doughnut',
+  data: { labels: ['Поиск','Реклама','Прямой','Email','Другое'], datasets: [{ data: [43,23,17,12,6], backgroundColor: ['#FFC800','#22c55e','#3b82f6','#a855f7','#d4d4d4'], borderWidth: 0 }] },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '65%', animation: ANIM, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '%' } } } }
+});
+
+// event sales curve
+new Chart(document.getElementById('eventSalesChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:20}, (_,i) => (i+1)+' мар'),
+    datasets: [
+      { label: 'Продажи/день', data: [45,52,38,67,89,120,95,78,82,104,112,98,65,71,88,145,132,76,68,91], borderColor: '#FFC800', backgroundColor: 'rgba(255,200,0,.1)', fill: true, tension: .3, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2 },
+      { label: 'Ожидаемый темп', data: [50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145], borderColor: '#93c5fd', borderDash: [5,5], tension: .3, pointRadius: 0, borderWidth: 1.5, fill: false }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, animation: ANIM, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10 } }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }, y: { grid: { color: '#f0f0f0' }, title: { display: true, text: 'билетов', font: { size: 10 } } } } }
+});
+
+// demographics
+new Chart(document.getElementById('demoChart'), {
+  type: 'bar',
+  data: { labels: ['18-24','25-34','35-44','45-54','55+'], datasets: [{ label: 'Мужчины', data: [820,2100,1650,890,340], backgroundColor: '#FFC800', borderRadius: 3 }, { label: 'Женщины', data: [1100,2800,1950,1200,470], backgroundColor: '#d4d4d4', borderRadius: 3 }] },
+  options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', animation: ANIM, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10 } } }, scales: { x: { grid: { color: '#f0f0f0' } }, y: { grid: { display: false } } } }
+});
+
+// pricing chart with bullet points
+const cumSold = [120,280,410,580,720,890,1050,1230,1380,1520,1700,1890,2100,2340,2510,2700,2890,3100,3280,3450,3600,3780,3920,4050,4210];
+const pricesArr = [2500,2500,2500,2500,2500,2500,2500,2500,2500,2500,2800,2800,2800,2800,2800,3000,3000,3000,3000,3000,3450,3450,3450,3450,3450];
+const forecastArr = new Array(24).fill(null).concat([4210,4800,5400,6100,7000,8200]);
+const changeMarkers = cumSold.map((v, i) => (i > 0 && pricesArr[i] !== pricesArr[i-1]) ? v : null);
+const changeRadii = changeMarkers.map(v => v ? 8 : 0).concat([0,0,0,0,0]);
+
+new Chart(document.getElementById('pricingChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:30}, (_,i) => (i+1)+' мар'),
+    datasets: [
+      { label: 'Продано', data: [...cumSold, null,null,null,null,null], borderColor: '#FFC800', backgroundColor: 'rgba(255,200,0,.08)', fill: true, tension: .2, pointRadius: 1, borderWidth: 2, yAxisID: 'y' },
+      { label: 'Прогноз', data: forecastArr, borderColor: '#FFC800', borderDash: [4,4], tension: .2, pointRadius: 0, borderWidth: 1.5, fill: false, yAxisID: 'y' },
+      { label: 'Цена', data: [...pricesArr, 3450,3450,3450,3450,3450], borderColor: '#60a5fa', tension: 0, pointRadius: 0, borderWidth: 2, stepped: true, yAxisID: 'y1' },
+      { label: 'Повышение', data: [...changeMarkers, null,null,null,null,null], borderColor: 'transparent', backgroundColor: '#ef4444', pointRadius: changeRadii, pointStyle: 'triangle', showLine: false, yAxisID: 'y' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: ANIM,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, filter: item => item.text !== 'Повышение' } },
+      tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => {
+        if (ctx.dataset.label === 'Повышение' && ctx.raw) return '⚡ Цена повышена';
+        if (ctx.dataset.label === 'Цена') return 'Цена: ' + ctx.parsed.y?.toLocaleString() + ' ₽';
+        if (ctx.raw !== null && ctx.dataset.label === 'Продано') return 'Продано: ' + ctx.parsed.y?.toLocaleString();
+        if (ctx.raw !== null && ctx.dataset.label === 'Прогноз') return 'Прогноз: ' + ctx.parsed.y?.toLocaleString();
+        return null;
+      } } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+      y: { position: 'left', grid: { color: '#f0f0f0' }, title: { display: true, text: 'Билетов', font: { size: 10 } } },
+      y1: { position: 'right', grid: { display: false }, ticks: { callback: v => v.toLocaleString() + ' ₽' }, title: { display: true, text: 'Цена', font: { size: 10 } } }
+    }
+  }
+});
+
+// finance
+new Chart(document.getElementById('financeChart'), {
+  type: 'bar',
+  data: { labels: ['Мастер и Маргарита','Вишневый сад','Щелкунчик','Евгений Онегин','Другие'], datasets: [{ label: 'Выручка', data: [3720000,2680000,1410000,350000,210000], backgroundColor: ['#FFC800','#fbbf24','#fcd34d','#fde68a','#d4d4d4'], borderRadius: 4 }] },
+  options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', animation: ANIM, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => (ctx.parsed.x/1e6).toFixed(2) + 'M ₽' } } }, scales: { x: { ticks: { callback: v => (v/1e6).toFixed(1)+'M' } }, y: { grid: { display: false } } } }
+});
+
+// campaigns
+new Chart(document.getElementById('campaignsChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:14}, (_,i) => (i+1)+' мар'),
+    datasets: [
+      { label: 'Выручка от рекламы', data: [4800,5200,3100,7200,4400,6100,8500,9200,5800,7800,8100,5200,6900,9800], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.08)', fill: true, tension: .3, pointRadius: 3, borderWidth: 2 },
+      { label: 'Расход', data: [1200,1400,980,1600,1100,1500,1800,2100,1300,1700,1900,1400,1600,2200], borderColor: '#ef4444', tension: .3, pointRadius: 2, borderWidth: 1.5, borderDash: [3,3], fill: false }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, animation: ANIM, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 10 } }, tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y/1000).toFixed(1) + 'K ₽' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' }, ticks: { callback: v => (v/1000)+'K' } } } }
+});
+
+// frequency (audience)
+const freqEl = document.getElementById('freqChart');
+if (freqEl) {
+  new Chart(freqEl, {
+    type: 'bar',
+    data: { labels: ['1 раз','2 раза','3-4','5-7','8+'], datasets: [{ label: 'Покупателей', data: [5840,4120,2690,1130,538], backgroundColor: ['#d4d4d4','#fde68a','#FFC800','#f59e0b','#d97706'], borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, animation: ANIM, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toLocaleString() + ' чел.' } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f0f0f0' } } } }
+  });
+}
+
+console.log('cabinet init, charts:', document.querySelectorAll('canvas').length);
+// TODO: ws для live-ленты заказов
+</script>
+</body>
+</html>
